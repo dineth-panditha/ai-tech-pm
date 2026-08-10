@@ -8,6 +8,9 @@ class Settings(BaseSettings):
     SUPABASE_KEY: str
     GROQ_API_KEY: str
 
+    GITHUB_TOKEN: str
+    GITHUB_REPO: str
+
     class Config:
         env_file = ".env"
         case_sensitive = True
