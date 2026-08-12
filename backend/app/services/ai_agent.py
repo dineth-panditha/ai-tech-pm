@@ -4,6 +4,9 @@ from langchain_core.tools import tool
 from langgraph.prebuilt import create_react_agent
 from datetime import datetime
 from app.core.config import settings
+from supabase import create_client, Client
+
+supabase: Client = create_client(settings.SUPABASE_URL, settings.SUPABASE_KEY)
 
 
 @tool
@@ -21,7 +24,6 @@ def get_github_open_issues(repo_name: str) -> str:
     The repo_name MUST be in the format 'owner/repo' (e.g., 'facebook/react' or 'dineth-panditha/ai-tech-pm').
     Use this when the user asks about pending tasks, open issues, or bugs in a specific repository.
     """
-
     print(f"----> AI is trying to call GitHub API for repo: {repo_name}...")
 
     url = f"https://api.github.com/repos/{repo_name}/issues?state=open"
@@ -71,7 +73,6 @@ def get_clickup_tasks() -> str:
     """Fetches the list of active tasks from the ClickUp workspace.
     Use this when the user asks about general project tasks, pending work, or ClickUp tickets.
     """
-
     print("----> AI is trying to call ClickUp API...")
 
     url = f"https://api.clickup.com/api/v2/team/{settings.CLICKUP_TEAM_ID}/task"
@@ -117,46 +118,97 @@ def get_clickup_tasks() -> str:
         print(f"----> ClickUp API Error: {str(e)}")
         return f"Failed to fetch ClickUp tasks. Error: {str(e)}"
 
+
 @tool
 def create_github_issue(repo_name: str, title: str, body: str) -> str:
     """Creates a new issue in a specific GitHub repository.
     The repo_name MUST be in the format 'owner/repo'.
-    Use this when the user asks to create, open, or log a new issue, bug, or task in a GitHub repository."""
-    
+    Use this when the user asks to create, open, or log a new issue, bug, or task in a GitHub repository.
+    """
     print(f"----> AI is trying to create a GitHub issue in {repo_name}...")
-    
+
     url = f"https://api.github.com/repos/{repo_name}/issues"
     headers = {
         "Authorization": f"token {settings.GITHUB_TOKEN}",
-        "Accept": "application/vnd.github.v3+json"
+        "Accept": "application/vnd.github.v3+json",
     }
-    
-    payload = {
-        "title": title,
-        "body": body
-    }
-    
+
+    payload = {"title": title, "body": body}
+
     try:
-       
         response = requests.post(url, headers=headers, json=payload, timeout=10)
-        
+
         if response.status_code == 404:
             return f"Repository '{repo_name}' not found. Please ensure it's in 'owner/repo' format."
         elif response.status_code == 401:
-            return "Unauthorized. Please check if the GitHub token has 'repo' permissions."
-            
-        response.raise_for_status() 
+            return (
+                "Unauthorized. Please check if the GitHub token has 'repo' permissions."
+            )
+
+        response.raise_for_status()
         issue_data = response.json()
-        
+
         print(f"----> GitHub API Success! Created issue #{issue_data['number']}.")
-        
+
         return f"Successfully created issue #{issue_data['number']}: '{issue_data['title']}'. URL: {issue_data['html_url']}"
-        
+
     except Exception as e:
         print(f"----> GitHub API Error: {str(e)}")
         return f"Failed to create GitHub issue in {repo_name}. Error: {str(e)}"
 
-    
+
+
+
+@tool
+def save_project_note(title: str, content: str) -> str:
+    """Saves an important project note, decision, or meeting summary to the database.
+    Use this when the user asks you to remember something, save a note, or document a decision.
+    """
+
+    print(f"----> 💾 AI is saving a note to Supabase: {title}")
+
+    try:
+        data, count = (
+            supabase.table("project_notes")
+            .insert({"title": title, "content": content})
+            .execute()
+        )
+        return f"Successfully saved the note '{title}' to the database."
+    except Exception as e:
+        print(f"----> Supabase Insert Error: {str(e)}")
+        return f"Failed to save the note. Error: {str(e)}"
+
+
+@tool
+def get_project_notes() -> str:
+    """Retrieves all saved project notes, decisions, and summaries from the database.
+    Use this when the user asks what you remember, what was discussed before, or asks for project notes.
+    """
+
+    print("----> AI is reading notes from Supabase...")
+
+    try:
+        response = (
+            supabase.table("project_notes")
+            .select("*")
+            .order("created_at", desc=True)
+            .execute()
+        )
+        notes = response.data
+
+        if not notes:
+            return "There are no saved notes in the database yet."
+
+        note_list = []
+        for note in notes:
+            note_list.append(f"- **{note['title']}**: {note['content']}")
+
+        return "Here are the saved project notes:\n" + "\n".join(note_list)
+    except Exception as e:
+        print(f"----> Supabase Select Error: {str(e)}")
+        return f"Failed to retrieve notes. Error: {str(e)}"
+
+
 def get_llm():
     return ChatGroq(
         api_key=settings.GROQ_API_KEY,
@@ -167,14 +219,20 @@ def get_llm():
 
 def chat_with_agent(user_message: str):
     print(f"---->  User asked: {user_message}")
-    
+
     llm = get_llm()
-    
-   
-    tools = [get_current_server_time, get_github_open_issues, get_clickup_tasks, create_github_issue]
-    
+
+    tools = [
+        get_current_server_time,
+        get_github_open_issues,
+        get_clickup_tasks,
+        create_github_issue,
+        save_project_note,
+        get_project_notes,
+    ]
+
     system_prompt = """You are an expert AI Technical Project Manager. 
-    You manage software development teams, their GitHub repositories, and ClickUp tasks.
+    You manage software development teams, their GitHub repositories, ClickUp tasks, and project documentation.
     
     CRITICAL RULES:
     1. ONLY use the tools explicitly provided to you.
@@ -184,20 +242,19 @@ def chat_with_agent(user_message: str):
     5. AFTER using a tool and receiving data, DO NOT call the tool again. Immediately summarize the data and answer the user.
     6. For general project tasks, sprint planning, and tickets, ALWAYS use get_clickup_tasks.
     7. If the user asks to create a bug or issue, use the create_github_issue tool. If they don't provide a title or body, ask them for the details first.
+    8. If the user asks you to remember something, document a decision, or save a note, ALWAYS use the save_project_note tool.
+    9. If the user asks what you remember, or asks for past decisions/notes, ALWAYS use the get_project_notes tool.
     """
-    
+
     agent = create_react_agent(llm, tools)
     print("----> AI is thinking...")
 
     config = {"recursion_limit": 5}
 
-    response = agent.invoke({
-        "messages": [
-            ("system", system_prompt),
-            ("user", user_message)
-        ]
-    }, config=config)
+    response = agent.invoke(
+        {"messages": [("system", system_prompt), ("user", user_message)]}, config=config
+    )
 
     print("----> AI finished thinking!")
-    
+
     return response["messages"][-1].content

@@ -1,5 +1,6 @@
 from pydantic_settings import BaseSettings
 
+
 class Settings(BaseSettings):
     PROJECT_NAME: str = "AI Project Manager API"
     VERSION: str = "1.0.0"
@@ -12,19 +13,13 @@ class Settings(BaseSettings):
 
     CLICKUP_API_TOKEN: str
     CLICKUP_TEAM_ID: str
-    
+
+    FRONTEND_URL: str
 
     class Config:
         env_file = ".env"
         case_sensitive = True
-        #extra = "ignore"
+        # extra = "ignore"
+
 
 settings = Settings()
-
-
-
-
-
-
-    
-    
