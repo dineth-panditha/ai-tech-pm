@@ -9,7 +9,10 @@ class Settings(BaseSettings):
     GROQ_API_KEY: str
 
     GITHUB_TOKEN: str
-    GITHUB_REPO: str
+
+    CLICKUP_API_TOKEN: str
+    CLICKUP_TEAM_ID: str
+    
 
     class Config:
         env_file = ".env"
