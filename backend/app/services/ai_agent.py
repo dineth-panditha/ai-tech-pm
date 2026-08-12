@@ -117,7 +117,46 @@ def get_clickup_tasks() -> str:
         print(f"----> ClickUp API Error: {str(e)}")
         return f"Failed to fetch ClickUp tasks. Error: {str(e)}"
 
+@tool
+def create_github_issue(repo_name: str, title: str, body: str) -> str:
+    """Creates a new issue in a specific GitHub repository.
+    The repo_name MUST be in the format 'owner/repo'.
+    Use this when the user asks to create, open, or log a new issue, bug, or task in a GitHub repository."""
+    
+    print(f"----> AI is trying to create a GitHub issue in {repo_name}...")
+    
+    url = f"https://api.github.com/repos/{repo_name}/issues"
+    headers = {
+        "Authorization": f"token {settings.GITHUB_TOKEN}",
+        "Accept": "application/vnd.github.v3+json"
+    }
+    
+    payload = {
+        "title": title,
+        "body": body
+    }
+    
+    try:
+       
+        response = requests.post(url, headers=headers, json=payload, timeout=10)
+        
+        if response.status_code == 404:
+            return f"Repository '{repo_name}' not found. Please ensure it's in 'owner/repo' format."
+        elif response.status_code == 401:
+            return "Unauthorized. Please check if the GitHub token has 'repo' permissions."
+            
+        response.raise_for_status() 
+        issue_data = response.json()
+        
+        print(f"----> GitHub API Success! Created issue #{issue_data['number']}.")
+        
+        return f"Successfully created issue #{issue_data['number']}: '{issue_data['title']}'. URL: {issue_data['html_url']}"
+        
+    except Exception as e:
+        print(f"----> GitHub API Error: {str(e)}")
+        return f"Failed to create GitHub issue in {repo_name}. Error: {str(e)}"
 
+    
 def get_llm():
     return ChatGroq(
         api_key=settings.GROQ_API_KEY,
@@ -128,32 +167,37 @@ def get_llm():
 
 def chat_with_agent(user_message: str):
     print(f"---->  User asked: {user_message}")
-
+    
     llm = get_llm()
-
-    tools = [get_current_server_time, get_github_open_issues, get_clickup_tasks]
-
+    
+   
+    tools = [get_current_server_time, get_github_open_issues, get_clickup_tasks, create_github_issue]
+    
     system_prompt = """You are an expert AI Technical Project Manager. 
     You manage software development teams, their GitHub repositories, and ClickUp tasks.
     
     CRITICAL RULES:
     1. ONLY use the tools explicitly provided to you.
     2. NEVER attempt to use external search tools.
-    3. When checking GitHub issues, you MUST provide the 'repo_name' parameter in 'owner/repo' format.
+    3. When checking or creating GitHub issues, you MUST provide the 'repo_name' parameter in 'owner/repo' format.
     4. If the user does not specify the repository owner, politely ask them for the full 'owner/repo' format before using the tool.
     5. AFTER using a tool and receiving data, DO NOT call the tool again. Immediately summarize the data and answer the user.
     6. For general project tasks, sprint planning, and tickets, ALWAYS use get_clickup_tasks.
+    7. If the user asks to create a bug or issue, use the create_github_issue tool. If they don't provide a title or body, ask them for the details first.
     """
-
+    
     agent = create_react_agent(llm, tools)
     print("----> AI is thinking...")
 
     config = {"recursion_limit": 5}
 
-    response = agent.invoke(
-        {"messages": [("system", system_prompt), ("user", user_message)]}, config=config
-    )
+    response = agent.invoke({
+        "messages": [
+            ("system", system_prompt),
+            ("user", user_message)
+        ]
+    }, config=config)
 
     print("----> AI finished thinking!")
-
+    
     return response["messages"][-1].content
