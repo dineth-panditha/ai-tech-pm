@@ -12,9 +12,9 @@ class Settings(BaseSettings):
     GITHUB_TOKEN: str
 
     CLICKUP_API_TOKEN: str
-    CLICKUP_TEAM_ID: str
-
     FRONTEND_URL: str
+
+    DISCORD_WEBHOOK_URL: str
 
     class Config:
         env_file = ".env"
