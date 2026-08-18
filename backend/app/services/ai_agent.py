@@ -465,7 +465,6 @@ def search_project_documents(query: str) -> str:
 
 
 def get_llm():
-    
     url = "https://api.groq.com/openai/v1/models"
     headers = {"Authorization": f"Bearer {settings.GROQ_API_KEY}"}
     
@@ -475,22 +474,37 @@ def get_llm():
         models_data = response.json().get("data", [])
         
         
-        text_models = [m["id"] for m in models_data if "whisper" not in m["id"].lower()]
+        valid_models = [
+            m["id"] for m in models_data 
+            if "whisper" not in m["id"].lower() 
+            and "gemma" not in m["id"].lower()
+            and "vision" not in m["id"].lower()
+        ]
         
-       
-        active_model = text_models[0] if text_models else "gemma2-9b-it"
-        print(f"---->Auto-selected Groq Model: {active_model}")
+      
+        llama_models = [m for m in valid_models if "llama" in m.lower()]
+        
+        if llama_models:
+            active_model = llama_models[0] 
+        elif valid_models:
+            active_model = valid_models[0] 
+        else:
+            active_model = "mixtral-8x7b-32768"
+            
+        print(f"----> Auto-selected Tool-Calling Model: {active_model}")
         
     except Exception as e:
         print(f"----> Error fetching models: {e}")
-        active_model = "gemma2-9b-it" 
+        active_model = "mixtral-8x7b-32768"
 
-  
     return ChatGroq(
         api_key=settings.GROQ_API_KEY,
         model_name=active_model,
         temperature=0.1,
     )
+
+
+
 
 def chat_with_agent(user_message: str):
     print(f"---->  User asked: {user_message}")
