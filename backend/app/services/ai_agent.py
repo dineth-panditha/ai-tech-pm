@@ -459,7 +459,7 @@ def search_project_documents(query: str) -> str:
 def get_llm():
     return ChatGroq(
         api_key=settings.GROQ_API_KEY,
-        model_name="llama3-70b-8192",
+        model_name="mixtral-8x7b-32768",
         temperature=0.1,
     )
 
