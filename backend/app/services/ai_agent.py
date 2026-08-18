@@ -75,7 +75,7 @@ def get_github_open_issues(repo_name: str) -> str:
 def get_clickup_workspaces() -> str:
     """Fetches all ClickUp workspaces (teams) the user has access to.
     Always use this first to find the 'team_id' before looking for spaces or tasks."""
-    print("----> 🔍 AI is fetching ClickUp Workspaces...")
+    print("----> AI is fetching ClickUp Workspaces...")
     url = "https://api.clickup.com/api/v2/team"
     headers = {"Authorization": settings.CLICKUP_API_TOKEN}
 
@@ -99,7 +99,7 @@ def get_clickup_workspaces() -> str:
 def get_clickup_spaces(team_id: str) -> str:
     """Fetches all Spaces within a specific ClickUp Workspace (team_id).
     Use this to find the 'space_id' before creating lists or tasks."""
-    print(f"----> 🔍 AI is fetching Spaces for Team: {team_id}...")
+    print(f"----> AI is fetching Spaces for Team: {team_id}...")
     url = f"https://api.clickup.com/api/v2/team/{team_id}/space"
     headers = {"Authorization": settings.CLICKUP_API_TOKEN}
 
@@ -123,7 +123,7 @@ def get_clickup_spaces(team_id: str) -> str:
 def get_clickup_lists(space_id: str) -> str:
     """Fetches all Lists within a specific ClickUp Space (space_id).
     Use this to find the 'list_id' before creating tasks."""
-    print(f"----> 🔍 AI is fetching Lists for Space: {space_id}...")
+    print(f"----> AI is fetching Lists for Space: {space_id}...")
     url = f"https://api.clickup.com/api/v2/space/{space_id}/list"
     headers = {"Authorization": settings.CLICKUP_API_TOKEN}
 
@@ -146,7 +146,7 @@ def get_clickup_lists(space_id: str) -> str:
 @tool
 def create_clickup_space(team_id: str, space_name: str) -> str:
     """Creates a new Space in a specific ClickUp Workspace (team_id)."""
-    print(f"----> 🛠️ AI is creating Space '{space_name}'...")
+    print(f"----> AI is creating Space '{space_name}'...")
     url = f"https://api.clickup.com/api/v2/team/{team_id}/space"
     headers = {
         "Authorization": settings.CLICKUP_API_TOKEN,
@@ -166,7 +166,7 @@ def create_clickup_space(team_id: str, space_name: str) -> str:
 @tool
 def create_clickup_list(space_id: str, list_name: str) -> str:
     """Creates a new List in a specific ClickUp Space (space_id)."""
-    print(f"----> 🛠️ AI is creating List '{list_name}'...")
+    print(f"---->  AI is creating List '{list_name}'...")
     url = f"https://api.clickup.com/api/v2/space/{space_id}/list"
     headers = {
         "Authorization": settings.CLICKUP_API_TOKEN,
@@ -188,7 +188,7 @@ def create_clickup_list(space_id: str, list_name: str) -> str:
 @tool
 def create_clickup_task(list_id: str, task_name: str, description: str = "") -> str:
     """Creates a new Task in a specific ClickUp List (list_id)."""
-    print(f"----> 🛠️ AI is creating Task '{task_name}'...")
+    print(f"----> AI is creating Task '{task_name}'...")
     url = f"https://api.clickup.com/api/v2/list/{list_id}/task"
     headers = {
         "Authorization": settings.CLICKUP_API_TOKEN,
@@ -298,7 +298,7 @@ def get_project_notes() -> str:
 def send_discord_message(message: str) -> str:
     """Sends a message to the team's Discord channel.
     Use this to notify the team about new tasks, decisions, or important updates."""
-    print(f"----> 💬 AI is sending a message to Discord: {message}")
+    print(f"----> AI is sending a message to Discord: {message}")
     
     url = settings.DISCORD_WEBHOOK_URL
     payload = {
@@ -320,7 +320,7 @@ def send_discord_message(message: str) -> str:
 def get_github_pr_diff(repo_name: str, pr_number: int) -> str:
     """Fetches the code diff of a GitHub Pull Request.
     repo_name format: 'owner/repo'. Use this to read the code changes before reviewing."""
-    print(f"----> 🔍 AI is fetching PR #{pr_number} diff from {repo_name}...")
+    print(f"----> AI is fetching PR #{pr_number} diff from {repo_name}...")
     url = f"https://api.github.com/repos/{repo_name}/pulls/{pr_number}"
     
     # Accept header එක '.diff' විදියට දීම අනිවාර්යයි කෝඩ් වෙනස්කම් ගන්න නම්
@@ -334,7 +334,7 @@ def get_github_pr_diff(repo_name: str, pr_number: int) -> str:
         response.raise_for_status()
         diff = response.text
         
-        # Token limit එක බේරගන්න කෝඩ් එක ගොඩක් දිග නම් කපනවා
+        
         if len(diff) > 4000:
             return diff[:4000] + "\n... [Diff truncated due to length]"
         return diff
@@ -345,7 +345,7 @@ def get_github_pr_diff(repo_name: str, pr_number: int) -> str:
 def post_github_pr_comment(repo_name: str, pr_number: int, comment: str) -> str:
     """Posts a comment or review on a GitHub Pull Request.
     repo_name format: 'owner/repo'. Use this to post your code review feedback."""
-    print(f"----> 💬 AI is posting a review on PR #{pr_number}...")
+    print(f"----> AI is posting a review on PR #{pr_number}...")
     url = f"https://api.github.com/repos/{repo_name}/issues/{pr_number}/comments"
     headers = {
         "Authorization": f"token {settings.GITHUB_TOKEN}",
@@ -363,7 +363,7 @@ def post_github_pr_comment(repo_name: str, pr_number: int, comment: str) -> str:
 def check_github_actions_status(repo_name: str) -> str:
     """Checks the latest GitHub Actions (CI/CD) workflow runs for a repository.
     repo_name format: 'owner/repo'. Use this to check if builds are passing."""
-    print(f"----> 🔍 AI is checking CI/CD status for {repo_name}...")
+    print(f"---->AI is checking CI/CD status for {repo_name}...")
     url = f"https://api.github.com/repos/{repo_name}/actions/runs?per_page=3"
     headers = {
         "Authorization": f"token {settings.GITHUB_TOKEN}",
@@ -403,7 +403,7 @@ def get_text_embedding(text: str) -> list:
 def save_project_document(title: str, content: str) -> str:
     """Saves a project document (architecture, guidelines, ideas) to the AI's long-term vector memory.
     Use this to memorize important project information for the future."""
-    print(f"----> 🧠 AI is learning and saving a new document: {title}...")
+    print(f"---->  AI is learning and saving a new document: {title}...")
     try:
         # Convert text to vector embedding
         vector = get_text_embedding(content)
@@ -425,7 +425,7 @@ def save_project_document(title: str, content: str) -> str:
 def search_project_documents(query: str) -> str:
     """Searches the project documentation for information related to the query.
     Use this when you need to recall project rules, architecture, or past documentation."""
-    print(f"----> 🔍 AI is searching memory for: {query}...")
+    print(f"---->  AI is searching memory for: {query}...")
     try:
         # Convert search query to vector
         query_vector = get_text_embedding(query)
@@ -456,13 +456,41 @@ def search_project_documents(query: str) -> str:
 
         
 
+# def get_llm():
+#     return ChatGroq(
+#         api_key=settings.GROQ_API_KEY,
+#         model_name="llama-3.1-8b-instant",
+#         temperature=0.1,
+#     )
+
+
 def get_llm():
+    
+    url = "https://api.groq.com/openai/v1/models"
+    headers = {"Authorization": f"Bearer {settings.GROQ_API_KEY}"}
+    
+    try:
+        response = requests.get(url, headers=headers, timeout=10)
+        response.raise_for_status()
+        models_data = response.json().get("data", [])
+        
+        
+        text_models = [m["id"] for m in models_data if "whisper" not in m["id"].lower()]
+        
+       
+        active_model = text_models[0] if text_models else "gemma2-9b-it"
+        print(f"---->Auto-selected Groq Model: {active_model}")
+        
+    except Exception as e:
+        print(f"----> Error fetching models: {e}")
+        active_model = "gemma2-9b-it" 
+
+  
     return ChatGroq(
         api_key=settings.GROQ_API_KEY,
-        model_name="llama-3.1-8b-instant",
+        model_name=active_model,
         temperature=0.1,
     )
-
 
 def chat_with_agent(user_message: str):
     print(f"---->  User asked: {user_message}")
