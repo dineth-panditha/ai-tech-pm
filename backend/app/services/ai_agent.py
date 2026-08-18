@@ -387,7 +387,6 @@ def check_github_actions_status(repo_name: str) -> str:
 
 
     
-
 # --- RAG & Enterprise Knowledge Tools ---
 
 def get_text_embedding(text: str) -> list:
@@ -416,7 +415,7 @@ def save_project_document(title: str, content: str) -> str:
             "embedding": vector
         }
         
-        from app.core.database import supabase
+        
         supabase.table("project_documents").insert(data).execute()
         return f"Successfully saved and memorized the document: '{title}'"
     except Exception as e:
@@ -432,7 +431,7 @@ def search_project_documents(query: str) -> str:
         query_vector = get_text_embedding(query)
         
         # Perform similarity search using Supabase RPC
-        from app.core.database import supabase
+       
         response = supabase.rpc(
             "match_documents",
             {
