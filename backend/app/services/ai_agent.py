@@ -552,10 +552,21 @@ def chat_with_agent(user_message: str):
 
     config = {"recursion_limit": 15}
 
-    response = agent.invoke(
-        {"messages": [("system", system_prompt), ("user", user_message)]}, config=config
-    )
+    try:
+        response = agent.invoke(
+            {"messages": [("system", system_prompt), ("user", user_message)]}, config=config
+        )
 
-    print("----> AI finished thinking!")
+        print("----> AI finished thinking!")
+        
+        final_message = response["messages"][-1].content
 
-    return response["messages"][-1].content
+        if not final_message or str(final_message).strip() == "":
+            print("---->  Warning: AI returned an empty string.")
+            return "I accessed the memory, but the AI Model did not provide a clear answer. Please ask again."
+            
+        return final_message
+
+    except Exception as e:
+        print(f"----> Error in agent: {str(e)}")
+        return f"An error occurred during AI execution: {str(e)}"
