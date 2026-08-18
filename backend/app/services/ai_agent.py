@@ -464,54 +464,10 @@ def search_project_documents(query: str) -> str:
 #     )
 
 def get_llm():
-    url = "https://api.groq.com/openai/v1/models"
-    headers = {"Authorization": f"Bearer {settings.GROQ_API_KEY}"}
     
-    try:
-        
-        response = requests.get(url, headers=headers, timeout=10)
-        response.raise_for_status()
-        models_data = response.json().get("data", [])
-        available_models = [m["id"] for m in models_data]
-        
-        print(f"---->  Available Models in your account: {available_models}")
-        
-        
-        tool_supported_models = [
-            "llama3-groq-70b-8192-tool-use-preview",
-            "llama3-groq-8b-8192-tool-use-preview",
-            "llama3-70b-8192",
-            "llama3-8b-8192",
-            "llama-3.2-90b-text-preview",
-            "llama-3.2-11b-vision-preview",
-            "llama-3.2-3b-preview",
-            "llama-3.2-1b-preview"
-        ]
-        
-        active_model = None
-        
-        
-        for model in tool_supported_models:
-            if model in available_models:
-                active_model = model
-                break
-                
-        
-        if not active_model:
-            for m in available_models:
-                if "llama" in m.lower() and "guard" not in m.lower():
-                    active_model = m
-                    break
-                    
-        
-        if not active_model:
-            active_model = available_models[0]
-            
-        print(f"----> Successfully Selected Tool-Calling Model: {active_model}")
-        
-    except Exception as e:
-        print(f"----> API Error fetching models: {e}")
-        active_model = "llama3-8b-8192"
+    active_model = "llama-3.1-8b-instant" 
+    
+    print(f"----> Selected Tool-Calling Model: {active_model}")
 
     return ChatGroq(
         api_key=settings.GROQ_API_KEY,
