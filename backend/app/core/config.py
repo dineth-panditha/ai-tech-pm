@@ -16,6 +16,8 @@ class Settings(BaseSettings):
 
     DISCORD_WEBHOOK_URL: str
 
+    HUGGINGFACE_API_KEY: str
+
     class Config:
         env_file = ".env"
         case_sensitive = True

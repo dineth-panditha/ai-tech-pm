@@ -383,7 +383,77 @@ def check_github_actions_status(repo_name: str) -> str:
             result += f"- Name: {run['name']} | Branch: {run['head_branch']} | Status: {run['status']} | Conclusion: {run['conclusion']}\n"
         return result
     except Exception as e:
-        return f"Error checking CI/CD status: {str(e)}"
+       return f"Error checking CI/CD status: {str(e)}"
+
+
+    
+
+# --- RAG & Enterprise Knowledge Tools ---
+
+def get_text_embedding(text: str) -> list:
+    """Helper function to convert text into a 384-dimensional vector using Hugging Face."""
+    model_id = "sentence-transformers/all-MiniLM-L6-v2"
+    url = f"https://api-inference.huggingface.co/pipeline/feature-extraction/{model_id}"
+    headers = {"Authorization": f"Bearer {settings.HUGGINGFACE_API_KEY}"}
+    
+    response = requests.post(url, headers=headers, json={"inputs": text}, timeout=15)
+    response.raise_for_status()
+    return response.json()
+
+@tool
+def save_project_document(title: str, content: str) -> str:
+    """Saves a project document (architecture, guidelines, ideas) to the AI's long-term vector memory.
+    Use this to memorize important project information for the future."""
+    print(f"----> 🧠 AI is learning and saving a new document: {title}...")
+    try:
+        # Convert text to vector embedding
+        vector = get_text_embedding(content)
+        
+        # Save to Supabase pgvector database
+        data = {
+            "content": content,
+            "metadata": {"title": title},
+            "embedding": vector
+        }
+        
+        from app.core.database import supabase
+        supabase.table("project_documents").insert(data).execute()
+        return f"Successfully saved and memorized the document: '{title}'"
+    except Exception as e:
+        return f"Error saving document: {str(e)}"
+
+@tool
+def search_project_documents(query: str) -> str:
+    """Searches the project documentation for information related to the query.
+    Use this when you need to recall project rules, architecture, or past documentation."""
+    print(f"----> 🔍 AI is searching memory for: {query}...")
+    try:
+        # Convert search query to vector
+        query_vector = get_text_embedding(query)
+        
+        # Perform similarity search using Supabase RPC
+        from app.core.database import supabase
+        response = supabase.rpc(
+            "match_documents",
+            {
+                "query_embedding": query_vector, 
+                "match_threshold": 0.3, 
+                "match_count": 3        
+            }
+        ).execute()
+        
+        results = response.data
+        if not results:
+            return "No relevant documents found in memory."
+            
+        context = "Found the following relevant documents:\n\n"
+        for row in results:
+            doc_title = row.get("metadata", {}).get("title", "Unknown")
+            context += f"--- Document: {doc_title} ---\n{row.get('content')}\n\n"
+            
+        return context
+    except Exception as e:
+        return f"Error searching documents: {str(e)}"
 
         
 
@@ -406,7 +476,9 @@ def chat_with_agent(user_message: str):
         get_clickup_workspaces, get_clickup_spaces, get_clickup_lists,
         create_clickup_space, create_clickup_list, create_clickup_task,
         send_discord_message,
-        get_github_pr_diff, post_github_pr_comment, check_github_actions_status # <--- අලුත් ඒවා
+        get_github_pr_diff, post_github_pr_comment, check_github_actions_status,
+        save_project_document,
+        search_project_documents
     ]
 
     system_prompt = """You are an expert AI Technical Project Manager and Tech Lead. 
@@ -414,9 +486,9 @@ def chat_with_agent(user_message: str):
     
     CRITICAL RULES:
     1. ONLY use the tools explicitly provided to you.
-    2. ClickUp Workflow: You must dynamically find IDs (Workspaces -> Spaces -> Lists) before creating tasks.
-    3. Code Reviews: If asked to review a PR, first use get_github_pr_diff to read the code. Analyze it for bugs, improvements, and best practices. Then, formulate a professional review and post it using post_github_pr_comment.
-    4. Communication: Use send_discord_message to keep the team updated on PR reviews, CI/CD failures, or new ClickUp tasks.
+    2. ClickUp Workflow: You must dynamically find IDs before creating tasks.
+    3. Code Reviews: Read code using get_github_pr_diff before posting reviews.
+    4. Enterprise Knowledge (RAG): If the user asks about project architecture, coding guidelines, or historical decisions, use search_project_documents to find the context. If the user gives you a new rule or architecture plan, use save_project_document to memorize it.
     """
 
     agent = create_react_agent(llm, tools)
