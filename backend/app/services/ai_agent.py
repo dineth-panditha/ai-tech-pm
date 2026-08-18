@@ -506,7 +506,7 @@ def chat_with_agent(user_message: str):
     agent = create_react_agent(llm, tools)
     print("----> AI is thinking...")
 
-    config = {"recursion_limit": 15}
+    config = {"recursion_limit": 50}
 
     try:
         response = agent.invoke(
