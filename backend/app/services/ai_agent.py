@@ -465,9 +465,9 @@ def search_project_documents(query: str) -> str:
 
 def get_llm():
     
-    active_model = "llama-3.1-8b-instant" 
+    active_model = "openai/gpt-oss-120b" 
     
-    print(f"----> Selected Tool-Calling Model: {active_model}")
+    print(f"----> Selected Model: {active_model}")
 
     return ChatGroq(
         api_key=settings.GROQ_API_KEY,
