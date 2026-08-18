@@ -395,7 +395,7 @@ def get_text_embedding(text: str) -> list:
     url = f"https://api-inference.huggingface.co/pipeline/feature-extraction/{model_id}"
     headers = {"Authorization": f"Bearer {settings.HUGGINGFACE_API_KEY}"}
     
-    response = requests.post(url, headers=headers, json={"inputs": text}, timeout=15)
+    response = requests.post(url, headers=headers, json={"inputs": text}, timeout=60)
     response.raise_for_status()
     return response.json()
 
