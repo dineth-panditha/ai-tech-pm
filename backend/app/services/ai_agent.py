@@ -463,46 +463,18 @@ def search_project_documents(query: str) -> str:
 #         temperature=0.1,
 #     )
 
-
 def get_llm():
-    url = "https://api.groq.com/openai/v1/models"
-    headers = {"Authorization": f"Bearer {settings.GROQ_API_KEY}"}
+    # Use a model known to reliably support tool calling on Groq
+    # Other great options: "llama-3.3-70b-versatile" or "mixtral-8x7b-32768"
+    active_model = "llama-3.1-8b-instant" 
     
-    try:
-        response = requests.get(url, headers=headers, timeout=10)
-        response.raise_for_status()
-        models_data = response.json().get("data", [])
-        
-        
-        valid_models = [
-            m["id"] for m in models_data 
-            if "whisper" not in m["id"].lower() 
-            and "gemma" not in m["id"].lower()
-            and "vision" not in m["id"].lower()
-        ]
-        
-      
-        llama_models = [m for m in valid_models if "llama" in m.lower()]
-        
-        if llama_models:
-            active_model = llama_models[0] 
-        elif valid_models:
-            active_model = valid_models[0] 
-        else:
-            active_model = "mixtral-8x7b-32768"
-            
-        print(f"----> Auto-selected Tool-Calling Model: {active_model}")
-        
-    except Exception as e:
-        print(f"----> Error fetching models: {e}")
-        active_model = "mixtral-8x7b-32768"
+    print(f"----> Selected Tool-Calling Model: {active_model}")
 
     return ChatGroq(
         api_key=settings.GROQ_API_KEY,
         model_name=active_model,
         temperature=0.1,
     )
-
 
 
 
