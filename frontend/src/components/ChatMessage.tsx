@@ -10,14 +10,16 @@ export default function ChatMessage({ message }: ChatMessageProps) {
   const isUser = message.role === "user";
 
   return (
-    <div className={`flex ${isUser ? "justify-end" : "justify-start"}`}>
-      <div className={`max-w-[80%] p-3 rounded-lg ${
-        isUser ? "bg-blue-500 text-white rounded-br-none" : "bg-gray-100 text-gray-800 rounded-bl-none"
+    <div className={`flex ${isUser ? "justify-end" : "justify-start"} animate-in fade-in slide-in-from-bottom-2 duration-300`}>
+      <div className={`max-w-[85%] p-4 rounded-2xl ${
+        isUser 
+          ? "bg-blue-600 text-white rounded-br-sm shadow-sm" 
+          : "bg-white border border-gray-200 text-gray-800 rounded-bl-sm shadow-sm"
       }`}>
         {isUser ? (
-          message.content
+          <div className="whitespace-pre-wrap leading-relaxed">{message.content}</div>
         ) : (
-          <div className="prose prose-sm max-w-none prose-blue">
+          <div className="prose prose-sm md:prose-base max-w-none prose-blue">
             <ReactMarkdown remarkPlugins={[remarkGfm]}>
               {message.content}
             </ReactMarkdown>
